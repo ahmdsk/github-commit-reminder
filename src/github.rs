@@ -1,16 +1,21 @@
+#![allow(non_snake_case)]
+
+use std::env;
+
 use anyhow::Result;
 use reqwest::Client;
 use serde::Deserialize;
+use tracing::{error, info};
 
 #[derive(Deserialize)]
 pub struct ContributionDay {
     pub date: String,
-    pub contribution_count: u32,
+    pub contributionCount: u32,
 }
 
 #[derive(Deserialize)]
 pub struct ContributionWeek {
-    pub contribution_days: Vec<ContributionDay>,
+    pub contributionDays: Vec<ContributionDay>,
 }
 
 #[derive(Deserialize)]
@@ -20,12 +25,12 @@ pub struct ContributionCalendar {
 
 #[derive(Deserialize)]
 pub struct ContributionsCollection {
-    pub contribution_calendar: ContributionCalendar,
+    pub contributionCalendar: ContributionCalendar,
 }
 
 #[derive(Deserialize)]
 pub struct User {
-    pub contributions_collection: ContributionsCollection,
+    pub contributionsCollection: ContributionsCollection,
 }
 
 #[derive(Deserialize)]
@@ -58,31 +63,48 @@ pub async fn get_today_contribution(client: &Client, token: &str, username: &str
         "#
     );
 
-    let res = client
+    info!("📡 REQUEST → GitHub GraphQL (get_today_contribution)");
+
+    let raw = client
         .post("https://api.github.com/graphql")
         .bearer_auth(token)
-        .header("User-Agent", "rust-contribution-checker")
+        .header("User-Agent", "rust-contrib-checker")
         .json(&serde_json::json!({ "query": query }))
         .send()
-        .await?
-        .json::<GraphQLResponse>()
-        .await?;
+        .await;
+
+    let res = match raw {
+        Ok(r) => r,
+        Err(e) => {
+            error!("❌ GitHub request error: {:?}", e);
+            return Ok(0);
+        }
+    };
+
+    let text = res.text().await.unwrap_or_default();
+
+    if env::var("MODE").unwrap_or("NORMAL".into()) == "TEST" {
+        info!("📥 RESPONSE ← GitHub: {}", text);
+    }
+
+    let parsed: GraphQLResponse = serde_json::from_str(&text).unwrap_or_else(|e| {
+        error!("❌ JSON parse error: {:?}", e);
+        panic!("GitHub JSON parsing failed");
+    });
 
     let today = chrono::Local::now().format("%Y-%m-%d").to_string();
 
-    let days = res
+    for w in parsed
         .data
         .user
-        .contributions_collection
-        .contribution_calendar
+        .contributionsCollection
+        .contributionCalendar
         .weeks
-        .into_iter()
-        .flat_map(|w| w.contribution_days)
-        .collect::<Vec<_>>();
-
-    for d in days {
-        if d.date == today {
-            return Ok(d.contribution_count);
+    {
+        for d in w.contributionDays {
+            if d.date == today {
+                return Ok(d.contributionCount);
+            }
         }
     }
 
