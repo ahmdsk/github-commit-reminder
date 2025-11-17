@@ -1,136 +1,192 @@
-# 🚀 GitHub Daily Contribution Notifier (Rust)
+# GitHub Daily Commit Reminder 🚀
 
-Sebuah aplikasi ringan berbasis Rust yang berjalan 24/7 untuk **mengecek kontribusi GitHub harian**, dan mengirimkan **notifikasi Telegram** jika kamu **belum melakukan commit pada hari tersebut**.
+A lightweight Rust-based daemon that reminds you (via Telegram Bot) whether you have contributed to GitHub today.  
+It checks your GitHub contributions every X minutes/hours and sends a notification:
 
-Aplikasi ini ideal untuk membangun kebiasaan _"commit setiap hari"_ atau menjaga GitHub streak.
+- ⚠️ When you **haven’t committed anything today**
+- ✔️ When you **already made contributions**
+- 🧪 Includes TEST MODE for easy debugging
+- 💤 Designed with zero CPU usage during idle state
 
----
+Built using:
 
-## ✨ Fitur Utama
-
-- 🔍 **Cek kontribusi GitHub harian** (menggunakan GitHub GraphQL API)
-- ⏰ **Jalan otomatis setiap hari jam 21:50**
-- 📢 **Mengirim notifikasi Telegram** jika kontribusi hari ini = 0
-- 🔁 **Repeat notification** hingga 3 kali  
-  (interval 10 menit atau bisa diubah)
-- 🌙 **CPU usage sangat rendah**  
-  (menggunakan `tokio::sleep_until` → bukan busy loop)
-- 🔒 Menggunakan token GitHub aman via `.env`
-- ⚡ Written with Rust + Tokio async runtime
+- Rust + Tokio (async executor)
+- GitHub GraphQL API
+- Telegram Bot API
+- Reqwest HTTP client
+- Tracing logger
 
 ---
 
-## 🧠 Cara Kerja
+## ✨ Features
 
-1. Aplikasi start → langsung tidur sampai jam **21:50**.
-2. Jam 21:50 → bangun → panggil GitHub GraphQL API.
-3. Jika **sudah commit** → selesai hari itu.
-4. Jika **belum commit** → kirim notif Telegram #1.
-5. Tunggu 10 menit → cek ulang.
-6. Ulangi sampai **3 kali** (bisa diubah).
-7. Setelah selesai → tidur 24 jam.
-8. Besok ulangi lagi.
-
-Semuanya dilakukan dengan event-loop async, sehingga CPU usage = **0% hampir sepanjang hari**.
+- 🔃 **Interval-based checking** (minutes or hours)
+- ☑️ **Daily contribution check using GitHub GraphQL**
+- 📢 **Telegram notifications**
+- ⚡ **Low CPU usage** (sleep-based async loop)
+- 🧪 **Test mode** available
+- 🛠️ Easy to extend & open for contribution
 
 ---
 
-## 🏗️ Teknologi yang Digunakan
+## 📦 Requirements
 
-- **Rust 2021 Edition**
-- **Tokio** — async runtime
-- **Reqwest** — HTTP client
-- **GitHub GraphQL API**
-- **Telegram Bot API**
-- **Chrono** — waktu & tanggal
-- **dotenvy** — konfigurasi environment
-- **Tracing** — logging modern
+### 1. Create a Telegram Bot
 
----
+- Open Telegram → search `@BotFather`
+- Use command `/newbot`
+- Save the given **BOT TOKEN**
+- Use `https://api.telegram.org/botTOKEN/getUpdates`  
+  to get your **chat ID**
 
-## 📁 Struktur Project
+### 2. Create GitHub Token
 
-```
+Go to: https://github.com/settings/tokens  
+Create a PAT (Personal Access Token) with:
 
-src/
-├── main.rs
-├── github.rs        # GitHub GraphQL API logic
-└── telegram.rs      # Telegram bot sender
-.env                  # environment variables
-Cargo.toml
-README.md
-
-```
+- `read:user`
+- `read:org`
 
 ---
 
-## 🔧 Instalasi
+## 🔧 Installation
 
-Pastikan Rust sudah terinstall:
+Clone the project:
 
-```
-
-curl --proto '=https' --tlsv1.2 -sSf [https://sh.rustup.rs](https://sh.rustup.rs) | sh
-
-```
-
-Clone repo:
-
-```
-
-git clone [https://github.com/your/repo.git](https://github.com/your/repo.git)
+```bash
+git clone https://github.com/yourname/github-commit-reminder
 cd github-commit-reminder
+```
 
+Install Rust (if needed):
+
+```bash
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
 
 ---
 
-## ⚙️ Setup Environment
+## ⚙️ Environment Variables
 
-Buat file `.env`:
+Create a `.env` file:
 
-```
+```env
+GITHUB_TOKEN=ghp_xxxxxxxxxx
+GITHUB_USERNAME=ahmdsk
 
-GITHUB_TOKEN=ghp_xxxxxx
-GITHUB_USERNAME=yourusername
-
-TELEGRAM_BOT_TOKEN=xxxxxx
+TELEGRAM_BOT_TOKEN=123456:ABCDEF
 TELEGRAM_CHAT_ID=123456789
 
+# Remind every 60 minutes (default)
+REMINDER_INTERVAL_MINUTES=60
+
+# OR use hours instead (fallback)
+# REMINDER_INTERVAL_HOURS=2
+
+# Test mode (send 1 message then exit)
+MODE=NORMAL
 ```
-
-### Cara mendapatkan `GITHUB_TOKEN`
-
-Masuk GitHub → Settings → Developer Settings → PAT:
-
-- pilih "Fine-grained token"
-- beri akses minimal:
-  - `read:user`
-  - `read:contributions`
-
-### Cara mendapatkan Telegram Bot Token & Chat ID
-
-1. Cari **@BotFather** → buat bot baru
-2. Ambil bot token
-3. Chat bot kamu
-4. Buka:
-
-```
-
-[https://api.telegram.org/botTOKEN/getUpdates](https://api.telegram.org/botTOKEN/getUpdates)
-
-```
-
-5. Ambil `chat.id`
 
 ---
 
-## ▶️ Menjalankan Aplikasi
+## ▶️ Running
 
+### Development mode
+
+```bash
+cargo run
 ```
 
-cargo run --release
+### Production mode
 
+```bash
+cargo build --release
+./target/release/github-commit-reminder
 ```
 
-Aplikasi akan langsung menunggu sampai jam 21:50.
+---
+
+## 🧪 Testing Notification
+
+Before running as daemon, you can test:
+
+```env
+MODE=TEST
+```
+
+Run:
+
+```bash
+cargo run
+```
+
+It will send:
+
+```
+🧪 TEST MODE → Notifikasi dari GitHub Reminder!
+```
+
+Then exit automatically.
+
+---
+
+## 📘 How It Works (Flow Overview)
+
+```
+load .env → init logger → init HTTP client
+                  ↓
+if MODE=TEST → kirim notif → exit
+                  ↓
+loop:
+    cek kontribusi GitHub hari ini
+    |
+    ├─ jika 0 → kirim notif "Belum ada kontribusi"
+    └─ jika >0 → kirim notif "Sudah kontribusi"
+    |
+    sleep (interval) → repeat
+```
+
+---
+
+## 🧩 Project Structure
+
+```
+src/
+ ├── main.rs          # Program entry, loop utama
+ ├── github.rs        # Github GraphQL API
+ ├── telegram.rs      # Telegram Bot sender
+ └── utils.rs         # (optional future utilities)
+.env.example
+README.md
+Cargo.toml
+```
+
+---
+
+## 🛠️ Contributing
+
+Contributions are welcome!  
+You can help with:
+
+- improving error handling
+- adding multi-user support
+- adding daily summary mode
+- adding streak tracking
+- improving logging
+- optimizing GraphQL queries
+
+### Steps:
+
+1. Fork project
+2. Create new branch
+3. Make changes
+4. Submit pull request
+
+Please keep contributions clean and idiomatic.
+
+---
+
+## 📜 License
+
+MIT License  
+Feel free to use and modify.

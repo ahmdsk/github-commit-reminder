@@ -77,7 +77,11 @@ async fn main() {
         }
 
         // sleep agar CPU tetap 0%
-        info!("😴 Sleep {} menit...", interval_minutes);
+        info!(
+            "😴 Sleep {} menit... atau {} jam...",
+            interval_minutes,
+            interval_minutes / 60
+        );
         sleep(Duration::from_secs(interval_minutes * 60)).await;
     }
 }
