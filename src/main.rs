@@ -60,14 +60,20 @@ async fn main() {
 
         if count == 0 {
             let msg = format!(
-                "⚠️ Reminder: Kamu BELUM commit hari ini ({}). Ayo push 1x!",
+                "⚠️ *Belum ada kontribusi hari ini*\n📅 {}\nAyo push minimal 1x!",
                 today
             );
             telegram::send_telegram(&client, &tg_token, &tg_chat, &msg)
                 .await
                 .unwrap();
         } else {
-            info!("✔ Kamu sudah commit hari ini ({} kontribusi).", count);
+            let msg = format!(
+                "✔ *Kontribusi hari ini terdeteksi!*\n📅 {}\nJumlah: {} commit 🚀",
+                today, count
+            );
+            telegram::send_telegram(&client, &tg_token, &tg_chat, &msg)
+                .await
+                .unwrap();
         }
 
         // sleep agar CPU tetap 0%
